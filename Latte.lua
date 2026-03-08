@@ -10,63 +10,44 @@ for _, v in pairs(game.CoreGui:GetChildren()) do
 end
 
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-ScreenGui.Name = "Latte_v22_Integrated"
+ScreenGui.Name = "Latte_v23_Final"
 
-local PINK = Color3.fromRGB(255, 105, 180)
-local BLUE = Color3.fromRGB(0, 191, 255)
-local WHITE = Color3.fromRGB(255, 255, 255)
-local LAVENDER = Color3.fromRGB(230, 190, 255)
-local RED = Color3.fromRGB(255, 50, 50)
-local BG = Color3.fromRGB(20, 20, 20)
-local SECONDARY = Color3.fromRGB(15, 15, 15)
+local PINK, BLUE, WHITE = Color3.fromRGB(255, 105, 180), Color3.fromRGB(0, 191, 255), Color3.fromRGB(255, 255, 255)
+local LAVENDER, RED = Color3.fromRGB(230, 190, 255), Color3.fromRGB(255, 50, 50)
+local BG, SECONDARY = Color3.fromRGB(15, 15, 15), Color3.fromRGB(10, 10, 10)
+local INT_LIMIT = 2147483647
 
 local MenuVisible, AimbotActive, EspActive = true, false, false
 local AntiKillActive, FlyActive = false, false
 local TargetPlayer = nil
-local FlySpeed, Smoothing = 50, 0.15
+local FlySpeed = 60
 
 local Watermark = Instance.new("TextLabel", ScreenGui)
-Watermark.Size = UDim2.new(0, 300, 0, 40)
-Watermark.Position = UDim2.new(0.5, -150, 0, 15)
-Watermark.BackgroundTransparency = 1
-Watermark.Text = "Latte | NullTheDev"
-Watermark.Font = Enum.Font.Code
-Watermark.TextSize = 22
-Watermark.TextColor3 = WHITE
-
+Watermark.Size, Watermark.Position = UDim2.new(0, 400, 0, 40), UDim2.new(0.5, -200, 0, 15)
+Watermark.BackgroundTransparency, Watermark.Text = 1, "Latte | NullTheDev"
+Watermark.Font, Watermark.TextSize, Watermark.TextColor3 = Enum.Font.Code, 24, WHITE
 local WGrad = Instance.new("UIGradient", Watermark)
-WGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, PINK),
-    ColorSequenceKeypoint.new(0.3, BLUE),
-    ColorSequenceKeypoint.new(0.6, WHITE),
-    ColorSequenceKeypoint.new(1, PINK)
-})
+WGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, PINK), ColorSequenceKeypoint.new(0.5, BLUE), ColorSequenceKeypoint.new(1, PINK)})
+
+RunService.RenderStepped:Connect(function()
+    WGrad.Offset = Vector2.new(math.sin(tick() * 2) * 0.5, 0)
+end)
 
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 580, 0, 460)
-MainFrame.Position = UDim2.new(0.5, -290, 0.5, -230)
-MainFrame.BackgroundColor3 = BG
-MainFrame.BorderSizePixel = 0
+MainFrame.Size, MainFrame.Position = UDim2.new(0, 600, 0, 480), UDim2.new(0.5, -300, 0.5, -240)
+MainFrame.BackgroundColor3, MainFrame.BorderSizePixel = BG, 0
 Instance.new("UICorner", MainFrame)
 
 local Border = Instance.new("Frame", MainFrame)
-Border.Size = UDim2.new(1, 4, 1, 4)
-Border.Position = UDim2.new(0, -2, 0, -2)
+Border.Size, Border.Position, Border.ZIndex = UDim2.new(1, 4, 1, 4), UDim2.new(0, -2, 0, -2), -1
 Border.BackgroundColor3 = WHITE
-Border.ZIndex = -1
 Instance.new("UICorner", Border)
-
 local BGrad = Instance.new("UIGradient", Border)
-BGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, LAVENDER),
-    ColorSequenceKeypoint.new(0.5, RED),
-    ColorSequenceKeypoint.new(1, LAVENDER)
-})
-
-RunService.RenderStepped:Connect(function() BGrad.Rotation = BGrad.Rotation + 2 end)
+BGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, LAVENDER), ColorSequenceKeypoint.new(0.5, RED), ColorSequenceKeypoint.new(1, LAVENDER)})
+RunService.RenderStepped:Connect(function() BGrad.Rotation = BGrad.Rotation + 3 end)
 
 local dragging, dragStart, startPos
-MainFrame.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true dragStart = i.Position startPos = MainFrame.Position end end)
+MainFrame.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging, dragStart, startPos = true, i.Position, MainFrame.Position end end)
 UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
     local d = i.Position - dragStart
     MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
@@ -74,134 +55,90 @@ end end)
 UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
 local Sidebar = Instance.new("Frame", MainFrame)
-Sidebar.Size = UDim2.new(0, 140, 1, 0)
-Sidebar.BackgroundColor3 = SECONDARY
+Sidebar.Size, Sidebar.BackgroundColor3 = UDim2.new(0, 140, 1, 0), SECONDARY
 Instance.new("UICorner", Sidebar)
 
 local Container = Instance.new("Frame", MainFrame)
-Container.Position = UDim2.new(0, 150, 0, 10)
-Container.Size = UDim2.new(1, -370, 1, -20)
-Container.BackgroundTransparency = 1
+Container.Position, Container.Size, Container.BackgroundTransparency = UDim2.new(0, 150, 0, 10), UDim2.new(1, -370, 1, -20), 1
 
 local Tabs = {}
 local function CreateTab(name)
     local btn = Instance.new("TextButton", Sidebar)
-    btn.Size = UDim2.new(1, 0, 0, 35)
-    btn.Position = UDim2.new(0, 0, 0, #Sidebar:GetChildren() * 35 - 35)
-    btn.BackgroundTransparency = 1
-    btn.Text = "  " .. name
-    btn.TextColor3 = Color3.new(0.6, 0.6, 0.6)
-    btn.Font = Enum.Font.Code
+    btn.Size, btn.BackgroundTransparency = UDim2.new(1, 0, 0, 40), 1
+    btn.Position = UDim2.new(0, 0, 0, #Sidebar:GetChildren() * 40 - 40)
+    btn.Text, btn.TextColor3, btn.Font = "  " .. name, Color3.new(0.5, 0.5, 0.5), Enum.Font.Code
     btn.TextXAlignment = Enum.TextXAlignment.Left
-    
     local frame = Instance.new("ScrollingFrame", Container)
-    frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.BackgroundTransparency = 1
-    frame.Visible = false
-    frame.ScrollBarThickness = 0
-    frame.CanvasSize = UDim2.new(0, 0, 2, 0)
+    frame.Size, frame.BackgroundTransparency, frame.Visible = UDim2.new(1, 0, 1, 0), 1, false
+    frame.ScrollBarThickness, frame.CanvasSize = 0, UDim2.new(0, 0, 2, 0)
     Instance.new("UIListLayout", frame).Padding = UDim.new(0, 5)
-    
     Tabs[name] = {B = btn, F = frame}
     btn.MouseButton1Click:Connect(function()
-        for _, t in pairs(Tabs) do t.F.Visible = false t.B.TextColor3 = Color3.new(0.6, 0.6, 0.6) end
+        for _, t in pairs(Tabs) do t.F.Visible, t.B.TextColor3 = false, Color3.new(0.5, 0.5, 0.5) end
         frame.Visible, btn.TextColor3 = true, PINK
     end)
     return frame
 end
 
-local PlayerTab = CreateTab("Player")
-local CombatTab = CreateTab("Combat")
-local VisualsTab = CreateTab("Visuals")
-local NetworkTab = CreateTab("Network")
-
-local ListPanel = Instance.new("Frame", MainFrame)
-ListPanel.Size = UDim2.new(0, 200, 1, 0)
-ListPanel.Position = UDim2.new(1, -200, 0, 0)
-ListPanel.BackgroundColor3 = SECONDARY
-ListPanel.Visible = false
-Instance.new("UICorner", ListPanel)
-
-local PScroll = Instance.new("ScrollingFrame", ListPanel)
-PScroll.Size = UDim2.new(1, -10, 0.65, 0)
-PScroll.Position = UDim2.new(0, 5, 0, 5)
-PScroll.BackgroundTransparency = 1
-Instance.new("UIListLayout", PScroll).Padding = UDim.new(0, 5)
-
-local OptionPanel = Instance.new("Frame", ListPanel)
-OptionPanel.Size = UDim2.new(1, -10, 0.3, 0)
-OptionPanel.Position = UDim2.new(0, 5, 0.68, 0)
-OptionPanel.BackgroundTransparency = 1
-Instance.new("UIListLayout", OptionPanel).Padding = UDim.new(0, 4)
-
-local function AddAction(text, cb)
-    local b = Instance.new("TextButton", OptionPanel)
-    b.Size = UDim2.new(1, 0, 0, 28)
-    b.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    b.Text = text
-    b.TextColor3 = PINK
-    b.Font = Enum.Font.Code
-    Instance.new("UICorner", b)
-    b.MouseButton1Click:Connect(cb)
-end
-
-AddAction("Go To", function() if TargetPlayer and TargetPlayer.Character then LocalPlayer.Character.HumanoidRootPart.CFrame = TargetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3) end end)
-AddAction("View Player", function() if TargetPlayer then Camera.CameraSubject = TargetPlayer.Character.Humanoid end end)
+local PlayerTab, CombatTab, VisualsTab, NetworkTab = CreateTab("Player"), CreateTab("Combat"), CreateTab("Visuals"), CreateTab("Network")
 
 local function AddToggle(parent, text, cb)
     local b = Instance.new("TextButton", parent)
-    b.Size = UDim2.new(1, -10, 0, 35)
-    b.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    b.Text = "  " .. text
-    b.TextColor3 = Color3.new(0.9, 0.9, 0.9)
-    b.Font = Enum.Font.Code
-    b.TextXAlignment = Enum.TextXAlignment.Left
+    b.Size, b.BackgroundColor3, b.Text = UDim2.new(1, -10, 0, 35), Color3.fromRGB(30, 30, 30), "  " .. text
+    b.TextColor3, b.Font, b.TextXAlignment = WHITE, Enum.Font.Code, Enum.TextXAlignment.Left
     Instance.new("UICorner", b)
     local act = false
     b.MouseButton1Click:Connect(function()
         act = not act
-        TweenService:Create(b, TweenInfo.new(0.2), {BackgroundColor3 = act and PINK or Color3.fromRGB(35, 35, 35)}):Play()
+        b.BackgroundColor3 = act and PINK or Color3.fromRGB(30, 30, 30)
         cb(act)
     end)
 end
 
-AddToggle(PlayerTab, "Toggle Player List", function(s) ListPanel.Visible = s end)
-AddToggle(PlayerTab, "Anti-Kill", function(s) AntiKillActive = s end)
+AddToggle(PlayerTab, "Anti-Kill (Max Health)", function(s) AntiKillActive = s end)
 AddToggle(PlayerTab, "Stable Fly", function(s) 
     FlyActive = s 
     if not s and LocalPlayer.Character then
         if LocalPlayer.Character.HumanoidRootPart:FindFirstChild("FlyVel") then LocalPlayer.Character.HumanoidRootPart.FlyVel:Destroy() end
         if LocalPlayer.Character.HumanoidRootPart:FindFirstChild("FlyGyro") then LocalPlayer.Character.HumanoidRootPart.FlyGyro:Destroy() end
-        LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
     end
 end)
 
 AddToggle(CombatTab, "Aimbot (RMB)", function(s) AimbotActive = s end)
 
-AddToggle(VisualsTab, "Gradient ESP", function(s) 
+AddToggle(VisualsTab, "Gradient ESP (All Teams)", function(s) 
     EspActive = s 
     if not s then
         for _, p in pairs(Players:GetPlayers()) do
-            if p.Character then
-                if p.Character:FindFirstChild("LatteESP") then p.Character.LatteESP:Destroy() end
-            end
+            if p.Character and p.Character:FindFirstChild("LatteESP") then p.Character.LatteESP:Destroy() end
         end
     end
 end)
 
+AddToggle(NetworkTab, "Break Scripts", function() 
+    for _, v in pairs(game:GetDescendants()) do 
+        if v:IsA("LocalScript") and v.Name ~= "Animate" then v.Disabled = true end 
+    end 
+end)
+AddToggle(NetworkTab, "Destroy Scripts", function() 
+    for _, v in pairs(game:GetDescendants()) do 
+        if v:IsA("LocalScript") and v.Name ~= "Animate" then v:Destroy() end 
+    end 
+end)
+
 RunService.Heartbeat:Connect(function()
-    if AntiKillActive and LocalPlayer.Character then
-        LocalPlayer.Character.Humanoid.Health = 2000
-        if LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then LocalPlayer.Character.HumanoidRootPart.CanTouch = false end
+    if AntiKillActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        local h = LocalPlayer.Character.Humanoid
+        h.MaxHealth = INT_LIMIT
+        h.Health = INT_LIMIT
     end
     
-    if FlyActive and LocalPlayer.Character then
+    if FlyActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local hrp = LocalPlayer.Character.HumanoidRootPart
         local gyro = hrp:FindFirstChild("FlyGyro") or Instance.new("BodyGyro", hrp)
         local vel = hrp:FindFirstChild("FlyVel") or Instance.new("BodyVelocity", hrp)
         gyro.Name, vel.Name = "FlyGyro", "FlyVel"
-        gyro.P, gyro.maxTorque = 9e4, Vector3.new(9e9, 9e9, 9e9)
-        vel.P, vel.maxForce = 1e4, Vector3.new(9e9, 9e9, 9e9)
+        gyro.maxTorque, vel.maxForce = Vector3.new(9e9, 9e9, 9e9), Vector3.new(9e9, 9e9, 9e9)
         gyro.CFrame = Camera.CFrame
         local move = Vector3.new(0,0,0)
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then move = move + Camera.CFrame.LookVector end
@@ -230,44 +167,19 @@ RunService.RenderStepped:Connect(function()
 
     if EspActive then
         for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+            if p ~= LocalPlayer and p.Character then
                 local highlight = p.Character:FindFirstChild("LatteESP") or Instance.new("Highlight", p.Character)
-                highlight.Name = "LatteESP"
-                highlight.FillTransparency = 1
-                highlight.OutlineColor = WHITE
-                
-                if not highlight:FindFirstChild("LatteGrad") then
-                    local g = Instance.new("UIGradient", highlight)
-                    g.Name = "LatteGrad"
-                    g.Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, PINK),
-                        ColorSequenceKeypoint.new(0.3, BLUE),
-                        ColorSequenceKeypoint.new(0.6, WHITE),
-                        ColorSequenceKeypoint.new(1, PINK)
-                    })
-                end
+                highlight.Name, highlight.FillTransparency, highlight.OutlineColor = "LatteESP", 1, WHITE
+                local g = highlight:FindFirstChild("G") or Instance.new("UIGradient", highlight)
+                g.Name = "G"
+                g.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, PINK), ColorSequenceKeypoint.new(0.5, BLUE), ColorSequenceKeypoint.new(1, PINK)})
             end
         end
     end
 end)
 
 UserInputService.InputBegan:Connect(function(i)
-    if i.KeyCode == Enum.KeyCode.Insert or i.KeyCode == Enum.KeyCode.Delete then
-        MenuVisible = not MenuVisible
-        MainFrame.Visible = MenuVisible
-    end
+    if i.KeyCode == Enum.KeyCode.Insert then MainFrame.Visible = not MainFrame.Visible end
 end)
 
-local function Update()
-    for _, v in pairs(PScroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
-    for _, p in pairs(Players:GetPlayers()) do
-        local b = Instance.new("TextButton", PScroll)
-        b.Size, b.BackgroundColor3, b.TextColor3 = UDim2.new(1, 0, 0, 30), Color3.fromRGB(30,30,30), PINK
-        b.Text, b.Font = p.DisplayName, Enum.Font.Code
-        b.MouseButton1Click:Connect(function() TargetPlayer = p end)
-    end
-end
-Update()
-Players.PlayerAdded:Connect(Update)
-Players.PlayerRemoving:Connect(Update)
 Tabs["Player"].F.Visible, Tabs["Player"].B.TextColor3 = true, PINK
