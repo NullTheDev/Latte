@@ -5,35 +5,38 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- Old Version Purge
+-- Purge previous sessions
 for _, v in pairs(game.CoreGui:GetChildren()) do
     if v:IsA("ScreenGui") and (v.Name:match("Latte") or v.Name:match("Mocher")) then v:Destroy() end
 end
 
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-ScreenGui.Name = "Latte_v19_Final"
+ScreenGui.Name = "Latte_v20"
 
 -- Colors
 local PINK, BLUE, WHITE = Color3.fromRGB(255, 105, 180), Color3.fromRGB(0, 191, 255), Color3.fromRGB(255, 255, 255)
 local LAVENDER, RED = Color3.fromRGB(230, 190, 255), Color3.fromRGB(255, 50, 50)
 local BG = Color3.fromRGB(12, 12, 12)
 
--- Global State
+-- State
 local State = {
     Aimbot = false, Esp = false, AntiKill = false, 
     Fly = false, InfJump = false, ServerPos = false,
     NoClip = false, Spin = false, Target = nil,
-    GodMode = false, AutoRevive = false,
-    FlySpeed = 50, WalkSpeed = 16
+    FlySpeed = 60
 }
 
--- Watermark (Middle Top)
+-- Watermark (Center Top)
 local Watermark = Instance.new("TextLabel", ScreenGui)
 Watermark.Size, Watermark.Position = UDim2.new(0, 300, 0, 40), UDim2.new(0.5, -150, 0, 15)
 Watermark.BackgroundTransparency, Watermark.Text = 1, "Latte | NullTheDev"
 Watermark.Font, Watermark.TextSize, Watermark.TextColor3 = Enum.Font.Code, 22, WHITE
 local WGrad = Instance.new("UIGradient", Watermark)
-WGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, PINK), ColorSequenceKeypoint.new(0.5, BLUE), ColorSequenceKeypoint.new(1, PINK)})
+WGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, PINK),
+    ColorSequenceKeypoint.new(0.5, BLUE),
+    ColorSequenceKeypoint.new(1, PINK)
+})
 
 -- Main Frame & Animated Border
 local MainFrame = Instance.new("Frame", ScreenGui)
@@ -76,7 +79,7 @@ local function CreateTab(name)
     
     local f = Instance.new("ScrollingFrame", Container)
     f.Size, f.BackgroundTransparency, f.Visible = UDim2.new(1, 0, 1, 0), 1, false
-    f.ScrollBarThickness, f.CanvasSize = 2, UDim2.new(0, 0, 4, 0)
+    f.ScrollBarThickness, f.CanvasSize = 2, UDim2.new(0, 0, 3, 0)
     Instance.new("UIListLayout", f).Padding = UDim.new(0, 5)
     
     Tabs[name] = {B = b, F = f}
@@ -87,8 +90,9 @@ local function CreateTab(name)
     return f
 end
 
-local PlayerTab, CombatTab, VisualsTab, NetworkTab = CreateTab("Movement"), CreateTab("Combat"), CreateTab("Visuals"), CreateTab("Utilities")
+local PlayerTab, CombatTab, VisualsTab, NetworkTab = CreateTab("Player"), CreateTab("Combat"), CreateTab("Visuals"), CreateTab("Network")
 
+-- UI Helpers
 local function AddToggle(parent, txt, key, cb)
     local b = Instance.new("TextButton", parent)
     b.Size, b.BackgroundColor3 = UDim2.new(1, -10, 0, 32), Color3.fromRGB(20, 20, 20)
@@ -102,40 +106,51 @@ local function AddToggle(parent, txt, key, cb)
     end)
 end
 
--- MOVEMENT
-AddToggle(PlayerTab, "Omni-Directional Flight", "Fly")
-AddToggle(PlayerTab, "Zero-Gravity Jump", "InfJump")
-AddToggle(PlayerTab, "Phase Shift (NoClip)", "NoClip")
-AddToggle(PlayerTab, "Centrifuge (Spin Bot)", "Spin")
-AddToggle(PlayerTab, "Instant Momentum", nil, function() LocalPlayer.Character.Humanoid.WalkSpeed = 100 end)
+-- Integrated Player List
+local ListPanel = Instance.new("Frame", MainFrame)
+ListPanel.Size, ListPanel.Position = UDim2.new(0, 200, 1, 0), UDim2.new(1, -200, 0, 0)
+ListPanel.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+Instance.new("UICorner", ListPanel)
 
--- COMBAT
-AddToggle(CombatTab, "Predictive Aimbot", "Aimbot")
-AddToggle(CombatTab, "Fortress Defense (God)", "GodMode")
-AddToggle(CombatTab, "Instant Resuscitation", "AutoRevive")
-local HealthBox = Instance.new("TextBox", CombatTab)
-HealthBox.Size, HealthBox.BackgroundColor3 = UDim2.new(1, -10, 0, 32), Color3.fromRGB(20, 20, 20)
-HealthBox.PlaceholderText, HealthBox.TextColor3, HealthBox.Font = "Inject Vitality (Health Int)", WHITE, Enum.Font.Code
-HealthBox.FocusLost:Connect(function(e) if e and tonumber(HealthBox.Text) then LocalPlayer.Character.Humanoid.Health = tonumber(HealthBox.Text) end end)
+local PScroll = Instance.new("ScrollingFrame", ListPanel)
+PScroll.Size, PScroll.Position, PScroll.BackgroundTransparency = UDim2.new(1, -10, 0.7, 0), UDim2.new(0, 5, 0, 5), 1
+Instance.new("UIListLayout", PScroll).Padding = UDim.new(0, 4)
 
--- VISUALS
-AddToggle(VisualsTab, "Spectrum ESP", "Esp")
-AddToggle(VisualsTab, "Network Ghost (Server Pos)", "ServerPos")
-AddToggle(VisualsTab, "Full Brightness", nil, function(s) game:GetService("Lighting").Brightness = s and 10 or 2 end)
+local function UpdateList()
+    for _, v in pairs(PScroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+    for _, p in pairs(Players:GetPlayers()) do
+        local b = Instance.new("TextButton", PScroll)
+        b.Size, b.Text, b.TextColor3 = UDim2.new(1, 0, 0, 25), p.DisplayName, PINK
+        b.BackgroundColor3, b.Font = Color3.fromRGB(18, 18, 18), Enum.Font.Code
+        Instance.new("UICorner", b)
+        b.MouseButton1Click:Connect(function() State.Target = p end)
+    end
+end
 
--- UTILITIES
-AddToggle(NetworkTab, "Logic Fracture (Break)", "Break", function() for _,v in pairs(game:GetDescendants()) do if v:IsA("LocalScript") and v.Name ~= "Animate" then v.Disabled = true end end end)
-AddToggle(NetworkTab, "Total Deletion (Destroy)", "Destroy", function() for _,v in pairs(game:GetDescendants()) do if v:IsA("LocalScript") and v.Name ~= "Animate" then v:Destroy() end end end)
-AddToggle(NetworkTab, "Clear Character Bloat", nil, function() for _,v in pairs(LocalPlayer.Character:GetChildren()) do if v:IsA("Accessory") then v:Destroy() end end end)
+-- Population
+AddToggle(PlayerTab, "Anti-Kill", "AntiKill")
+AddToggle(PlayerTab, "Dynamic Fly:3", "Fly")
+AddToggle(PlayerTab, "Infinite Jump", "InfJump")
+AddToggle(PlayerTab, "NoClip", "NoClip")
+AddToggle(PlayerTab, "Spinnyyyyyy", "Spin")
 
--- Core Loops
+AddToggle(CombatTab, "Aimbot", "Aimbot")
+AddToggle(CombatTab, "Custom Health", nil, function() LocalPlayer.Character.Humanoid.Health = 5000 end)
+
+AddToggle(VisualsTab, "Gradient ESP", "Esp")
+AddToggle(VisualsTab, "Show Server Position", "ServerPos")
+
+AddToggle(NetworkTab, "Break Scripts", nil, function() for _,v in pairs(game:GetDescendants()) do if v:IsA("LocalScript") then v.Disabled = true end end end)
+AddToggle(NetworkTab, "Destroy Scripts", nil, function() for _,v in pairs(game:GetDescendants()) do if v:IsA("LocalScript") then v:Destroy() end end end)
+
+-- Movement & Combat Loops
 RunService.RenderStepped:Connect(function()
-    -- Fly Engine Fix
     if State.Fly and LocalPlayer.Character then
         local hrp = LocalPlayer.Character.HumanoidRootPart
-        local bv = hrp:FindFirstChild("LatteV") or Instance.new("BodyVelocity", hrp)
-        local bg = hrp:FindFirstChild("LatteG") or Instance.new("BodyGyro", hrp)
-        bv.Name, bg.Name, bv.maxForce, bg.maxTorque = "LatteV", "LatteG", Vector3.new(9e9,9e9,9e9), Vector3.new(9e9,9e9,9e9)
+        local bv = hrp:FindFirstChild("L_Vel") or Instance.new("BodyVelocity", hrp)
+        local bg = hrp:FindFirstChild("L_Gyr") or Instance.new("BodyGyro", hrp)
+        bv.Name, bg.Name = "L_Vel", "L_Gyr"
+        bv.maxForce, bg.maxTorque = Vector3.new(9e9, 9e9, 9e9), Vector3.new(9e9, 9e9, 9e9)
         bg.CFrame = Camera.CFrame
         
         local move = Vector3.new(0, 0.1, 0)
@@ -143,24 +158,18 @@ RunService.RenderStepped:Connect(function()
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then move = move - Camera.CFrame.LookVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then move = move - Camera.CFrame.RightVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.D) then move = move + Camera.CFrame.RightVector end
-        
         bv.Velocity = move * State.FlySpeed
         LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-    elseif LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart:FindFirstChild("LatteV") then
-        LocalPlayer.Character.HumanoidRootPart.LatteV:Destroy()
-        LocalPlayer.Character.HumanoidRootPart.LatteG:Destroy()
+    elseif LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart:FindFirstChild("L_Vel") then
+        LocalPlayer.Character.HumanoidRootPart.L_Vel:Destroy()
+        LocalPlayer.Character.HumanoidRootPart.L_Gyr:Destroy()
     end
 
-    -- Aimbot & ESP (Synced Gradient)
     if State.Esp then
         for _,p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
                 local h = p.Character:FindFirstChild("LatteESP") or Instance.new("Highlight", p.Character)
                 h.Name, h.FillTransparency, h.OutlineColor = "LatteESP", 1, PINK
-                if not h:FindFirstChild("UIGradient") then
-                    local g = Instance.new("UIGradient", h)
-                    g.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, PINK), ColorSequenceKeypoint.new(0.5, BLUE), ColorSequenceKeypoint.new(1, PINK)})
-                end
             end
         end
     end
@@ -168,21 +177,18 @@ end)
 
 RunService.Heartbeat:Connect(function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        local hum = LocalPlayer.Character.Humanoid
-        
-        -- Anti-Kill & Auto-Revive
-        if State.GodMode then hum.Health = hum.MaxHealth end
-        if State.AutoRevive and hum.Health <= 0 then
-            LocalPlayer:LoadCharacter() -- Instant Respawn
+        if State.AntiKill and LocalPlayer.Character.Humanoid.Health <= 0 then
+            LocalPlayer:LoadCharacter()
             task.wait(0.1)
-            Instance.new("ForceField", LocalPlayer.Character).Visible = true -- Protection Bubble
+            Instance.new("ForceField", LocalPlayer.Character).Visible = true
         end
-        
-        if State.NoClip then for _,v in pairs(LocalPlayer.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end end
     end
 end)
 
 UserInputService.InputBegan:Connect(function(i) if i.KeyCode == Enum.KeyCode.Insert or i.KeyCode == Enum.KeyCode.Delete then MainFrame.Visible = not MainFrame.Visible end end)
 UserInputService.JumpRequest:Connect(function() if State.InfJump then LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end end)
 
-Tabs["Movement"].F.Visible, Tabs["Movement"].B.TextColor3 = true, PINK
+UpdateList()
+Players.PlayerAdded:Connect(UpdateList)
+Players.PlayerRemoving:Connect(UpdateList)
+Tabs["Player"].F.Visible, Tabs["Player"].B.TextColor3 = true, PINK
