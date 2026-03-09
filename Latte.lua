@@ -10,10 +10,9 @@ for _, v in pairs(game.CoreGui:GetChildren()) do
 end
 
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-ScreenGui.Name = "Latte_v35_Master"
+ScreenGui.Name = "Latte_v36_Fixed"
 
 local PINK, BLUE, WHITE = Color3.fromRGB(255, 105, 180), Color3.fromRGB(0, 191, 255), Color3.fromRGB(255, 255, 255)
-local LAVENDER, RED = Color3.fromRGB(230, 190, 255), Color3.fromRGB(255, 50, 50)
 local BG, SECONDARY = Color3.fromRGB(12, 12, 12), Color3.fromRGB(8, 8, 8)
 local INT_LIMIT = 2147483647
 
@@ -30,33 +29,27 @@ local GlobalGrad = ColorSequence.new({
     ColorSequenceKeypoint.new(1, PINK)
 })
 
-local Watermark = Instance.new("TextLabel", ScreenGui)
-Watermark.Size, Watermark.Position = UDim2.new(0, 400, 0, 40), UDim2.new(0.5, -200, 0, 15)
-Watermark.BackgroundTransparency, Watermark.Text = 1, "Latte | NullTheDev"
-Watermark.Font, Watermark.TextSize, Watermark.TextColor3 = Enum.Font.Code, 24, WHITE
-local WGrad = Instance.new("UIGradient", Watermark)
-WGrad.Color = GlobalGrad
-RunService.RenderStepped:Connect(function() WGrad.Offset = Vector2.new(math.sin(tick() * 2) * 0.5, 0) end)
-
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size, MainFrame.Position = UDim2.new(0, 750, 0, 520), UDim2.new(0.5, -375, 0.5, -260)
 MainFrame.BackgroundColor3, MainFrame.BorderSizePixel = BG, 0
 Instance.new("UICorner", MainFrame)
-
-local Border = Instance.new("Frame", MainFrame)
-Border.Size, Border.Position, Border.ZIndex = UDim2.new(1, 4, 1, 4), UDim2.new(0, -2, 0, -2), -1
-Border.BackgroundColor3 = WHITE
-Instance.new("UICorner", Border)
-local BGrad = Instance.new("UIGradient", Border)
-BGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, LAVENDER), ColorSequenceKeypoint.new(0.5, RED), ColorSequenceKeypoint.new(1, LAVENDER)})
-RunService.RenderStepped:Connect(function() BGrad.Rotation = BGrad.Rotation + 3 end)
 
 local Sidebar = Instance.new("Frame", MainFrame)
 Sidebar.Size, Sidebar.BackgroundColor3 = UDim2.new(0, 140, 1, 0), SECONDARY
 Instance.new("UICorner", Sidebar)
 
 local Container = Instance.new("Frame", MainFrame)
-Container.Position, Container.Size, Container.BackgroundTransparency = UDim2.new(0, 150, 0, 10), UDim2.new(1, -410, 1, -20), 1
+Container.Position, Container.Size, Container.BackgroundTransparency = UDim2.new(0, 150, 0, 10), UDim2.new(0, 340, 1, -20), 1
+
+local ListPanel = Instance.new("Frame", MainFrame)
+ListPanel.Size, ListPanel.Position = UDim2.new(0, 250, 1, 0), UDim2.new(1, -250, 0, 0)
+ListPanel.BackgroundColor3 = SECONDARY
+Instance.new("UICorner", ListPanel)
+
+local PScroll = Instance.new("ScrollingFrame", ListPanel)
+PScroll.Size, PScroll.Position, PScroll.BackgroundTransparency = UDim2.new(1, -10, 0.95, 0), UDim2.new(0, 5, 0, 5), 1
+PScroll.ScrollBarThickness, PScroll.CanvasSize = 0, UDim2.new(0, 0, 5, 0)
+Instance.new("UIListLayout", PScroll).Padding = UDim.new(0, 5)
 
 local Tabs = {}
 local function CreateTab(name)
@@ -67,7 +60,7 @@ local function CreateTab(name)
     btn.TextXAlignment = Enum.TextXAlignment.Left
     local frame = Instance.new("ScrollingFrame", Container)
     frame.Size, frame.BackgroundTransparency, frame.Visible = UDim2.new(1, 0, 1, 0), 1, false
-    frame.ScrollBarThickness, frame.CanvasSize = 0, UDim2.new(0, 0, 4, 0)
+    frame.ScrollBarThickness, frame.CanvasSize = 0, UDim2.new(0, 0, 2, 0)
     Instance.new("UIListLayout", frame).Padding = UDim.new(0, 5)
     Tabs[name] = {B = btn, F = frame}
     btn.MouseButton1Click:Connect(function()
@@ -103,77 +96,39 @@ AddToggle(MainTab, "Ghost", "Ghost")
 AddToggle(MainTab, "Invisible", "Invisible")
 AddToggle(MainTab, "No Cooldown", nil, function()
     for _, v in pairs(LocalPlayer.Backpack:GetDescendants()) do
-        if v.Name:lower():match("cooldown") or v.Name:lower():match("wait") then v.Value = 0 end
+        if v:IsA("NumberValue") or v:IsA("IntValue") then
+            if v.Name:lower():find("cooldown") or v.Name:lower():find("wait") then v.Value = 0 end
+        end
     end
 end)
 
 AddToggle(CombatTab, "Aimbot", "Aimbot")
-
 AddToggle(VisualsTab, "ESP", "Esp")
 AddToggle(VisualsTab, "2D Box ESP", "Boxes")
 AddToggle(VisualsTab, "Tracers", "Tracers")
 AddToggle(VisualsTab, "Name Tags", "NameTags")
 
-local function GetClosest()
-    local target, dist = nil, math.huge
+local function UpdateList()
+    for _, v in pairs(PScroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
-            local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
-            if vis then
-                local d = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                if d < dist then target, dist = p, d end
-            end
-        end
+        local b = Instance.new("TextButton", PScroll)
+        b.Size, b.BackgroundColor3, b.TextColor3 = UDim2.new(1, 0, 0, 30), Color3.fromRGB(25, 25, 25), PINK
+        b.Text, b.Font = p.DisplayName, Enum.Font.Code
+        Instance.new("UICorner", b)
     end
-    return target
 end
 
 RunService.RenderStepped:Connect(function()
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            local char = p.Character
-            local hrp = char.HumanoidRootPart
+            local hrp = p.Character.HumanoidRootPart
             local screenPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
 
-            local h = char:FindFirstChild("LatteESP")
-            if State.Esp then
-                if not h then
-                    h = Instance.new("Highlight", char)
-                    h.Name, h.FillTransparency, h.OutlineColor = "LatteESP", 1, WHITE
-                    local g = Instance.new("UIGradient", h) g.Color = GlobalGrad
-                end
-            elseif h then h:Destroy() end
-
-            local b = char:FindFirstChild("LatteBox")
-            if State.Boxes and onScreen then
-                if not b then
-                    b = Instance.new("BillboardGui", char)
-                    b.Name, b.Size, b.AlwaysOnTop = "LatteBox", UDim2.new(4.5, 0, 6, 0), true
-                    local frame = Instance.new("Frame", b)
-                    frame.Size, frame.BackgroundTransparency = UDim2.new(1, 0, 1, 0), 1
-                    local uiStroke = Instance.new("UIStroke", frame)
-                    uiStroke.Thickness, uiStroke.Color = 2, WHITE
-                    local g = Instance.new("UIGradient", uiStroke) g.Color = GlobalGrad
-                end
-            elseif b then b:Destroy() end
-
-            local n = char:FindFirstChild("LatteName")
-            if State.NameTags then
-                if not n then
-                    n = Instance.new("BillboardGui", char)
-                    n.Name, n.Size, n.AlwaysOnTop, n.ExtentsOffset = "LatteName", UDim2.new(0, 200, 0, 50), true, Vector3.new(0, 3, 0)
-                    local label = Instance.new("TextLabel", n)
-                    label.Size, label.BackgroundTransparency, label.Text = UDim2.new(1, 0, 1, 0), 1, p.DisplayName
-                    label.TextColor3, label.Font, label.TextSize = WHITE, Enum.Font.Code, 14
-                    local g = Instance.new("UIGradient", label) g.Color = GlobalGrad
-                end
-            elseif n then n:Destroy() end
-
-            local t = char:FindFirstChild("LatteTracer")
+            local t = p.Character:FindFirstChild("LatteTracer")
             if State.Tracers and onScreen then
                 if not t then
                     t = Instance.new("Frame", ScreenGui)
-                    t.Name, t.BorderSizePixel, t.AnchorPoint = "LatteTracer", 0, Vector2.new(0.5, 0.5)
+                    t.Name, t.BorderSizePixel, t.ZIndex = "LatteTracer", 0, 0
                     local g = Instance.new("UIGradient", t) g.Color = GlobalGrad
                 end
                 local origin = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
@@ -185,13 +140,24 @@ RunService.RenderStepped:Connect(function()
             elseif t then t:Destroy() end
         end
     end
-
+    
     if State.Aimbot and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-        local t = GetClosest()
+        local t, d = nil, math.huge
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+                local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
+                if vis then
+                    local mag = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    if mag < d then t, d = p, mag end
+                end
+            end
+        end
         if t then Camera.CFrame = CFrame.new(Camera.CFrame.Position, t.Character.Head.Position) end
     end
 end)
 
-UserInputService.InputBegan:Connect(function(i) if i.KeyCode == Enum.KeyCode.Insert or i.KeyCode == Enum.KeyCode.Delete then MainFrame.Visible = not MainFrame.Visible end end)
-
+UpdateList()
+Players.PlayerAdded:Connect(UpdateList)
+Players.PlayerRemoving:Connect(UpdateList)
 Tabs["Main"].F.Visible, Tabs["Main"].B.TextColor3 = true, PINK
+UserInputService.InputBegan:Connect(function(i) if i.KeyCode == Enum.KeyCode.Insert then MainFrame.Visible = not MainFrame.Visible end end)
