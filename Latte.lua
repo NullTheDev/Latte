@@ -23,7 +23,7 @@ local State = {
     Fly = false, FlySpeed = 65, Target = nil, Bubble = false
 }
 
--- Central Gradient for RGB Buttons
+-- Colors:3
 local GlobalGrad = ColorSequence.new({
     ColorSequenceKeypoint.new(0, PINK), 
     ColorSequenceKeypoint.new(0.5, BLUE), 
@@ -51,7 +51,7 @@ local BGrad = Instance.new("UIGradient", Border)
 BGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, LAVENDER), ColorSequenceKeypoint.new(0.5, RED), ColorSequenceKeypoint.new(1, LAVENDER)})
 RunService.RenderStepped:Connect(function() BGrad.Rotation = BGrad.Rotation + 3 end)
 
--- Dragging Logic
+-- I fucking hate robloxs scripting language
 local dragging, dragStart, startPos
 MainFrame.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging, dragStart, startPos = true, i.Position, MainFrame.Position end end)
 UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
@@ -92,7 +92,7 @@ local TeamsTab = CreateTab("Teams")
 local InventoryTab = CreateTab("Inventory")
 local NetworkTab = CreateTab("Network")
 
--- Inventory Refresh Logic
+-- Da Inventory
 local function RefreshInventory(p)
     for _, v in pairs(Tabs["Inventory"].F:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
     if p and p:FindFirstChild("Backpack") then
@@ -115,7 +115,7 @@ local function RefreshInventory(p)
     end
 end
 
--- Player List Logic
+-- Stupid Player List
 local ListPanel = Instance.new("Frame", MainFrame)
 ListPanel.Size, ListPanel.Position = UDim2.new(0, 250, 1, 0), UDim2.new(1, -250, 0, 0)
 ListPanel.BackgroundColor3 = SECONDARY
@@ -160,9 +160,9 @@ local function AddToggle(parent, text, key, cb)
     end)
 end
 
--- Toggles & Buttons
-AddToggle(PlayerTab, "Anti-Kill (32-Bit Limit)", "AntiKill")
-AddToggle(PlayerTab, "Stable Fly", "Fly", function(s)
+-- The Fucking Buttons
+AddToggle(PlayerTab, "Anti-Kill", "AntiKill")
+AddToggle(PlayerTab, "Dynamic Fly", "Fly", function(s)
     if not s and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local hrp = LocalPlayer.Character.HumanoidRootPart
         if hrp:FindFirstChild("FlyVel") then hrp.FlyVel:Destroy() end
@@ -184,11 +184,11 @@ end)
 AddToggle(NetworkTab, "Destroy Scripts", nil, function()
     for _, v in pairs(game:GetDescendants()) do if v:IsA("LocalScript") and v.Name ~= "Animate" then v:Destroy() end end
 end)
-AddToggle(NetworkTab, "Disconnect (Kill-Switch)", nil, function()
+AddToggle(NetworkTab, "Delete LocalPlayer", nil, function()
     LocalPlayer:Destroy()
 end)
 
--- Main Loops
+-- REAHHHHH
 RunService.Heartbeat:Connect(function()
     if State.AntiKill and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         local h = LocalPlayer.Character.Humanoid
