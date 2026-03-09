@@ -11,7 +11,7 @@ for _, v in pairs(game.CoreGui:GetChildren()) do
 end
 
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-ScreenGui.Name = "Latte_v26_Master"
+ScreenGui.Name = "Latte_v27_Master"
 
 local PINK, BLUE, WHITE = Color3.fromRGB(255, 105, 180), Color3.fromRGB(0, 191, 255), Color3.fromRGB(255, 255, 255)
 local LAVENDER, RED = Color3.fromRGB(230, 190, 255), Color3.fromRGB(255, 50, 50)
@@ -23,12 +23,19 @@ local State = {
     Fly = false, FlySpeed = 65, Target = nil, Bubble = false
 }
 
+-- Central Gradient for RGB Buttons
+local GlobalGrad = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, PINK), 
+    ColorSequenceKeypoint.new(0.5, BLUE), 
+    ColorSequenceKeypoint.new(1, PINK)
+})
+
 local Watermark = Instance.new("TextLabel", ScreenGui)
 Watermark.Size, Watermark.Position = UDim2.new(0, 400, 0, 40), UDim2.new(0.5, -200, 0, 15)
 Watermark.BackgroundTransparency, Watermark.Text = 1, "Latte | NullTheDev"
 Watermark.Font, Watermark.TextSize, Watermark.TextColor3 = Enum.Font.Code, 24, WHITE
 local WGrad = Instance.new("UIGradient", Watermark)
-WGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, PINK), ColorSequenceKeypoint.new(0.5, BLUE), ColorSequenceKeypoint.new(1, PINK)})
+WGrad.Color = GlobalGrad
 RunService.RenderStepped:Connect(function() WGrad.Offset = Vector2.new(math.sin(tick() * 2) * 0.5, 0) end)
 
 local MainFrame = Instance.new("Frame", ScreenGui)
@@ -44,6 +51,7 @@ local BGrad = Instance.new("UIGradient", Border)
 BGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, LAVENDER), ColorSequenceKeypoint.new(0.5, RED), ColorSequenceKeypoint.new(1, LAVENDER)})
 RunService.RenderStepped:Connect(function() BGrad.Rotation = BGrad.Rotation + 3 end)
 
+-- Dragging Logic
 local dragging, dragStart, startPos
 MainFrame.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging, dragStart, startPos = true, i.Position, MainFrame.Position end end)
 UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
@@ -84,6 +92,30 @@ local TeamsTab = CreateTab("Teams")
 local InventoryTab = CreateTab("Inventory")
 local NetworkTab = CreateTab("Network")
 
+-- Inventory Refresh Logic
+local function RefreshInventory(p)
+    for _, v in pairs(Tabs["Inventory"].F:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+    if p and p:FindFirstChild("Backpack") then
+        for _, tool in pairs(p.Backpack:GetChildren()) do
+            local b = Instance.new("TextButton", Tabs["Inventory"].F)
+            b.Size, b.BackgroundColor3 = UDim2.new(1, -10, 0, 35), Color3.fromRGB(30, 30, 30)
+            b.Text, b.TextColor3, b.Font = tool.Name, WHITE, Enum.Font.Code
+            Instance.new("UICorner", b)
+            
+            local iGrad = Instance.new("UIGradient", b)
+            iGrad.Color = GlobalGrad
+            RunService.RenderStepped:Connect(function() iGrad.Offset = Vector2.new(math.sin(tick() * 3) * 0.5, 0) end)
+
+            b.MouseButton1Click:Connect(function()
+                local c = tool:Clone()
+                c.Parent = LocalPlayer.Backpack
+                for _, s in pairs(c:GetDescendants()) do if s:IsA("LocalScript") then s.Disabled = false end end
+            end)
+        end
+    end
+end
+
+-- Player List Logic
 local ListPanel = Instance.new("Frame", MainFrame)
 ListPanel.Size, ListPanel.Position = UDim2.new(0, 250, 1, 0), UDim2.new(1, -250, 0, 0)
 ListPanel.BackgroundColor3 = SECONDARY
@@ -93,26 +125,6 @@ local PScroll = Instance.new("ScrollingFrame", ListPanel)
 PScroll.Size, PScroll.Position, PScroll.BackgroundTransparency = UDim2.new(1, -10, 0.95, 0), UDim2.new(0, 5, 0, 5), 1
 PScroll.ScrollBarThickness = 0
 Instance.new("UIListLayout", PScroll).Padding = UDim.new(0, 5)
-
-local function RefreshInventory(p)
-    for _, v in pairs(InventoryTab:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
-    if p and p:FindFirstChild("Backpack") then
-        for _, tool in pairs(p.Backpack:GetChildren()) do
-            local b = Instance.new("TextButton", InventoryTab)
-            b.Size, b.BackgroundColor3 = UDim2.new(1, -10, 0, 35), Color3.fromRGB(30, 30, 30)
-            b.Text, b.TextColor3, b.Font = "Steal: " .. tool.Name, PINK, Enum.Font.Code
-            Instance.new("UICorner", b)
-            b.MouseButton1Click:Connect(function()
-                local c = tool:Clone()
-                c.Parent = LocalPlayer.Backpack
-                for _, s in pairs(c:GetDescendants()) do if s:IsA("LocalScript") then s.Disabled = false end end
-                b.Text = "Stolen! :3"
-                task.wait(1)
-                b.Text = "Steal: " .. tool.Name
-            end)
-        end
-    end
-end
 
 local function UpdateList()
     for _, v in pairs(PScroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
@@ -142,12 +154,13 @@ local function AddToggle(parent, text, key, cb)
     b.TextColor3, b.Font, b.TextXAlignment = WHITE, Enum.Font.Code, Enum.TextXAlignment.Left
     Instance.new("UICorner", b)
     b.MouseButton1Click:Connect(function()
-        State[key] = not State[key]
-        b.BackgroundColor3 = State[key] and PINK or Color3.fromRGB(30, 30, 30)
-        if cb then cb(State[key]) end
+        if key then State[key] = not State[key] end
+        b.BackgroundColor3 = (key and State[key]) and PINK or Color3.fromRGB(30, 30, 30)
+        if cb then cb(State[key] or true) end
     end)
 end
 
+-- Toggles & Buttons
 AddToggle(PlayerTab, "Anti-Kill (32-Bit Limit)", "AntiKill")
 AddToggle(PlayerTab, "Stable Fly", "Fly", function(s)
     if not s and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -158,6 +171,10 @@ AddToggle(PlayerTab, "Stable Fly", "Fly", function(s)
     end
 end)
 AddToggle(PlayerTab, "Respawn Bubble", "Bubble")
+AddToggle(PlayerTab, "Clear Inventory", nil, function()
+    for _, v in pairs(LocalPlayer.Backpack:GetChildren()) do v:Destroy() end
+    if LocalPlayer.Character:FindFirstChildOfClass("Tool") then LocalPlayer.Character:FindFirstChildOfClass("Tool"):Destroy() end
+end)
 
 AddToggle(VisualsTab, "Gradient ESP", "Esp")
 
@@ -167,12 +184,15 @@ end)
 AddToggle(NetworkTab, "Destroy Scripts", nil, function()
     for _, v in pairs(game:GetDescendants()) do if v:IsA("LocalScript") and v.Name ~= "Animate" then v:Destroy() end end
 end)
+AddToggle(NetworkTab, "Disconnect (Kill-Switch)", nil, function()
+    LocalPlayer:Destroy()
+end)
 
+-- Main Loops
 RunService.Heartbeat:Connect(function()
     if State.AntiKill and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         local h = LocalPlayer.Character.Humanoid
-        h.MaxHealth = INT_LIMIT
-        h.Health = INT_LIMIT
+        h.MaxHealth, h.Health = INT_LIMIT, INT_LIMIT
         if h.Health < 100 then LocalPlayer:LoadCharacter() end
     end
     
@@ -180,7 +200,6 @@ RunService.Heartbeat:Connect(function()
         local hrp = LocalPlayer.Character.HumanoidRootPart
         local gyro = hrp:FindFirstChild("FlyGyro") or Instance.new("BodyGyro", hrp)
         local vel = hrp:FindFirstChild("FlyVel") or Instance.new("BodyVelocity", hrp)
-        gyro.Name, vel.Name = "FlyGyro", "FlyVel"
         gyro.maxTorque, vel.maxForce = Vector3.new(9e9, 9e9, 9e9), Vector3.new(9e9, 9e9, 9e9)
         gyro.CFrame = Camera.CFrame
         local move = Vector3.new(0,0,0)
@@ -193,10 +212,7 @@ RunService.Heartbeat:Connect(function()
     end
 
     if State.Bubble and LocalPlayer.Character then
-        if not LocalPlayer.Character:FindFirstChild("ForceField") then
-            local ff = Instance.new("ForceField", LocalPlayer.Character)
-            ff.Visible = true
-        end
+        if not LocalPlayer.Character:FindFirstChild("ForceField") then Instance.new("ForceField", LocalPlayer.Character) end
     elseif not State.Bubble and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("ForceField") then
         LocalPlayer.Character.ForceField:Destroy()
     end
@@ -209,7 +225,7 @@ RunService.RenderStepped:Connect(function()
                 local highlight = p.Character:FindFirstChild("LatteESP") or Instance.new("Highlight", p.Character)
                 highlight.Name, highlight.FillTransparency, highlight.OutlineColor = "LatteESP", 1, WHITE
                 local g = highlight:FindFirstChild("G") or Instance.new("UIGradient", highlight)
-                g.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, PINK), ColorSequenceKeypoint.new(0.5, BLUE), ColorSequenceKeypoint.new(1, PINK)})
+                g.Color = GlobalGrad
             end
         end
     end
