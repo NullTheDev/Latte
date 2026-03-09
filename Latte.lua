@@ -10,7 +10,7 @@ for _, v in pairs(game.CoreGui:GetChildren()) do
 end
 
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-ScreenGui.Name = "Latte_v31_Full"
+ScreenGui.Name = "Latte_v35_Master"
 
 local PINK, BLUE, WHITE = Color3.fromRGB(255, 105, 180), Color3.fromRGB(0, 191, 255), Color3.fromRGB(255, 255, 255)
 local LAVENDER, RED = Color3.fromRGB(230, 190, 255), Color3.fromRGB(255, 50, 50)
@@ -20,7 +20,8 @@ local INT_LIMIT = 2147483647
 local State = {
     Visible = true, AntiKill = false, Fly = false, FlySpeed = 2.5,
     Ghost = false, Invisible = false, AntiRubberBand = false,
-    Esp = false, OriginalPos = nil, Target = nil
+    Esp = false, Aimbot = false, Tracers = false, Boxes = false, NameTags = false,
+    OriginalPos = nil, Target = nil
 }
 
 local GlobalGrad = ColorSequence.new({
@@ -29,7 +30,6 @@ local GlobalGrad = ColorSequence.new({
     ColorSequenceKeypoint.new(1, PINK)
 })
 
--- Watermark
 local Watermark = Instance.new("TextLabel", ScreenGui)
 Watermark.Size, Watermark.Position = UDim2.new(0, 400, 0, 40), UDim2.new(0.5, -200, 0, 15)
 Watermark.BackgroundTransparency, Watermark.Text = 1, "Latte | NullTheDev"
@@ -38,7 +38,6 @@ local WGrad = Instance.new("UIGradient", Watermark)
 WGrad.Color = GlobalGrad
 RunService.RenderStepped:Connect(function() WGrad.Offset = Vector2.new(math.sin(tick() * 2) * 0.5, 0) end)
 
--- UI Thingy-ma-bob
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size, MainFrame.Position = UDim2.new(0, 750, 0, 520), UDim2.new(0.5, -375, 0.5, -260)
 MainFrame.BackgroundColor3, MainFrame.BorderSizePixel = BG, 0
@@ -52,7 +51,6 @@ local BGrad = Instance.new("UIGradient", Border)
 BGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, LAVENDER), ColorSequenceKeypoint.new(0.5, RED), ColorSequenceKeypoint.new(1, LAVENDER)})
 RunService.RenderStepped:Connect(function() BGrad.Rotation = BGrad.Rotation + 3 end)
 
--- Da Ding
 local Sidebar = Instance.new("Frame", MainFrame)
 Sidebar.Size, Sidebar.BackgroundColor3 = UDim2.new(0, 140, 1, 0), SECONDARY
 Instance.new("UICorner", Sidebar)
@@ -80,67 +78,13 @@ local function CreateTab(name)
 end
 
 local MainTab = CreateTab("Main")
+local CombatTab = CreateTab("Combat")
 local VisualsTab = CreateTab("Visuals")
 local TeamsTab = CreateTab("Teams")
 local InventoryTab = CreateTab("Inventory")
 local NetworkTab = CreateTab("Network")
+local ConsoleTab = CreateTab("Console")
 
--- Side Player List
-local ListPanel = Instance.new("Frame", MainFrame)
-ListPanel.Size, ListPanel.Position = UDim2.new(0, 250, 1, 0), UDim2.new(1, -250, 0, 0)
-ListPanel.BackgroundColor3 = SECONDARY
-Instance.new("UICorner", ListPanel)
-
-local PScroll = Instance.new("ScrollingFrame", ListPanel)
-PScroll.Size, PScroll.Position, PScroll.BackgroundTransparency = UDim2.new(1, -10, 0.95, 0), UDim2.new(0, 5, 0, 5), 1
-PScroll.ScrollBarThickness = 0
-Instance.new("UIListLayout", PScroll).Padding = UDim.new(0, 5)
-
--- I can see your fucking items
-local function RefreshInventory(p)
-    for _, v in pairs(InventoryTab:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
-    if p and p:FindFirstChild("Backpack") then
-        for _, tool in pairs(p.Backpack:GetChildren()) do
-            local b = Instance.new("TextButton", InventoryTab)
-            b.Size, b.BackgroundColor3 = UDim2.new(1, -10, 0, 35), Color3.fromRGB(30, 30, 30)
-            b.Text, b.TextColor3, b.Font = tool.Name, WHITE, Enum.Font.Code
-            Instance.new("UICorner", b)
-            local iGrad = Instance.new("UIGradient", b)
-            iGrad.Color = GlobalGrad
-            RunService.RenderStepped:Connect(function() iGrad.Offset = Vector2.new(math.sin(tick() * 3) * 0.5, 0) end)
-            b.MouseButton1Click:Connect(function()
-                local c = tool:Clone()
-                c.Parent = LocalPlayer.Backpack
-                for _, s in pairs(c:GetDescendants()) do if s:IsA("LocalScript") then s.Disabled = false end end
-            end)
-        end
-    end
-end
-
-local function UpdateList()
-    for _, v in pairs(PScroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
-    for _, p in pairs(Players:GetPlayers()) do
-        local b = Instance.new("TextButton", PScroll)
-        b.Size, b.BackgroundColor3, b.TextColor3 = UDim2.new(1, 0, 0, 30), Color3.fromRGB(25, 25, 25), PINK
-        b.Text, b.Font = p.DisplayName, Enum.Font.Code
-        Instance.new("UICorner", b)
-        b.MouseButton1Click:Connect(function() State.Target = p RefreshInventory(p) end)
-    end
-end
-
--- Teaming is bad no no
-local function UpdateTeams()
-    for _, v in pairs(TeamsTab:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
-    for _, t in pairs(Teams:GetTeams()) do
-        local b = Instance.new("TextButton", TeamsTab)
-        b.Size, b.BackgroundColor3, b.Text = UDim2.new(1, -10, 0, 35), Color3.fromRGB(30, 30, 30), "Join " .. t.Name
-        b.TextColor3, b.Font = t.TeamColor.Color, Enum.Font.Code
-        Instance.new("UICorner", b)
-        b.MouseButton1Click:Connect(function() LocalPlayer.Team = t end)
-    end
-end
-
--- Toggle Factory
 local function AddToggle(parent, text, key, cb)
     local b = Instance.new("TextButton", parent)
     b.Size, b.BackgroundColor3, b.Text = UDim2.new(1, -10, 0, 35), Color3.fromRGB(30, 30, 30), "  " .. text
@@ -153,59 +97,101 @@ local function AddToggle(parent, text, key, cb)
     end)
 end
 
--- Tab Setup
 AddToggle(MainTab, "Anti-Kill", "AntiKill")
-AddToggle(MainTab, "Stable Fly", "Fly", function(s) if not s and LocalPlayer.Character then LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp) end end)
-AddToggle(MainTab, "Ghost", "Ghost", function(s) if s and LocalPlayer.Character then State.OriginalPos = LocalPlayer.Character.HumanoidRootPart.CFrame end end)
-AddToggle(MainTab, "Invisible", "Invisible", function(s) if s and LocalPlayer.Character then State.OriginalPos = LocalPlayer.Character.HumanoidRootPart.CFrame end end)
-AddToggle(MainTab, "Clear Inventory", nil, function() for _, v in pairs(LocalPlayer.Backpack:GetChildren()) do v:Destroy() end end)
-
-AddToggle(VisualsTab, "Gradient ESP", "Esp")
-
-AddToggle(NetworkTab, "Anti-RubberBand", "AntiRubberBand")
-AddToggle(NetworkTab, "Destroy LocalPlayer", nil, function() LocalPlayer:Destroy() end)
-AddToggle(NetworkTab, "Break Scripts", nil, function() for _, v in pairs(game:GetDescendants()) do if v:IsA("LocalScript") and v.Name ~= "Animate" then v.Disabled = true end end end)
-AddToggle(NetworkTab, "Destroy Scripts", nil, function() for _, v in pairs(game:GetDescendants()) do if v:IsA("LocalScript") and v.Name ~= "Animate" then v:Destroy() end end end)
-
--- Core Loops
-RunService.Heartbeat:Connect(function()
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    local hrp, hum = char.HumanoidRootPart, char.Humanoid
-    if State.AntiKill then hum.MaxHealth, hum.Health = INT_LIMIT, INT_LIMIT end
-    if State.Fly then
-        hum:ChangeState(Enum.HumanoidStateType.Physics)
-        local dir = Vector3.new(0,0,0)
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + Camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - Camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - Camera.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + Camera.CFrame.RightVector end
-        hrp.Velocity = Vector3.new(0, 0.1, 0)
-        hrp.CFrame = hrp.CFrame + (dir * State.FlySpeed)
+AddToggle(MainTab, "Stable Fly", "Fly")
+AddToggle(MainTab, "Ghost", "Ghost")
+AddToggle(MainTab, "Invisible", "Invisible")
+AddToggle(MainTab, "No Cooldown", nil, function()
+    for _, v in pairs(LocalPlayer.Backpack:GetDescendants()) do
+        if v.Name:lower():match("cooldown") or v.Name:lower():match("wait") then v.Value = 0 end
     end
-    if State.Ghost and State.OriginalPos then hrp.CFrame = State.OriginalPos end
-    if State.Invisible then hrp.CFrame = CFrame.new(-99999, 0, -99999) end
-    if State.AntiRubberBand then hrp.Velocity, hrp.RotVelocity = Vector3.new(0,0,0), Vector3.new(0,0,0) end
 end)
 
-RunService.RenderStepped:Connect(function()
-    if State.Esp then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character then
-                local h = p.Character:FindFirstChild("LatteESP") or Instance.new("Highlight", p.Character)
-                h.Name, h.FillTransparency, h.OutlineColor = "LatteESP", 1, WHITE
-                local g = h:FindFirstChild("G") or Instance.new("UIGradient", h)
-                g.Color = GlobalGrad
+AddToggle(CombatTab, "Aimbot", "Aimbot")
+
+AddToggle(VisualsTab, "ESP", "Esp")
+AddToggle(VisualsTab, "2D Box ESP", "Boxes")
+AddToggle(VisualsTab, "Tracers", "Tracers")
+AddToggle(VisualsTab, "Name Tags", "NameTags")
+
+local function GetClosest()
+    local target, dist = nil, math.huge
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+            local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
+            if vis then
+                local d = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                if d < dist then target, dist = p, d end
             end
         end
+    end
+    return target
+end
+
+RunService.RenderStepped:Connect(function()
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local char = p.Character
+            local hrp = char.HumanoidRootPart
+            local screenPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+
+            local h = char:FindFirstChild("LatteESP")
+            if State.Esp then
+                if not h then
+                    h = Instance.new("Highlight", char)
+                    h.Name, h.FillTransparency, h.OutlineColor = "LatteESP", 1, WHITE
+                    local g = Instance.new("UIGradient", h) g.Color = GlobalGrad
+                end
+            elseif h then h:Destroy() end
+
+            local b = char:FindFirstChild("LatteBox")
+            if State.Boxes and onScreen then
+                if not b then
+                    b = Instance.new("BillboardGui", char)
+                    b.Name, b.Size, b.AlwaysOnTop = "LatteBox", UDim2.new(4.5, 0, 6, 0), true
+                    local frame = Instance.new("Frame", b)
+                    frame.Size, frame.BackgroundTransparency = UDim2.new(1, 0, 1, 0), 1
+                    local uiStroke = Instance.new("UIStroke", frame)
+                    uiStroke.Thickness, uiStroke.Color = 2, WHITE
+                    local g = Instance.new("UIGradient", uiStroke) g.Color = GlobalGrad
+                end
+            elseif b then b:Destroy() end
+
+            local n = char:FindFirstChild("LatteName")
+            if State.NameTags then
+                if not n then
+                    n = Instance.new("BillboardGui", char)
+                    n.Name, n.Size, n.AlwaysOnTop, n.ExtentsOffset = "LatteName", UDim2.new(0, 200, 0, 50), true, Vector3.new(0, 3, 0)
+                    local label = Instance.new("TextLabel", n)
+                    label.Size, label.BackgroundTransparency, label.Text = UDim2.new(1, 0, 1, 0), 1, p.DisplayName
+                    label.TextColor3, label.Font, label.TextSize = WHITE, Enum.Font.Code, 14
+                    local g = Instance.new("UIGradient", label) g.Color = GlobalGrad
+                end
+            elseif n then n:Destroy() end
+
+            local t = char:FindFirstChild("LatteTracer")
+            if State.Tracers and onScreen then
+                if not t then
+                    t = Instance.new("Frame", ScreenGui)
+                    t.Name, t.BorderSizePixel, t.AnchorPoint = "LatteTracer", 0, Vector2.new(0.5, 0.5)
+                    local g = Instance.new("UIGradient", t) g.Color = GlobalGrad
+                end
+                local origin = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                local dest = Vector2.new(screenPos.X, screenPos.Y)
+                local mag = (dest - origin).Magnitude
+                t.Size = UDim2.new(0, mag, 0, 2)
+                t.Position = UDim2.new(0, (origin.X + dest.X) / 2, 0, (origin.Y + dest.Y) / 2)
+                t.Rotation = math.deg(math.atan2(dest.Y - origin.Y, dest.X - origin.X))
+            elseif t then t:Destroy() end
+        end
+    end
+
+    if State.Aimbot and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        local t = GetClosest()
+        if t then Camera.CFrame = CFrame.new(Camera.CFrame.Position, t.Character.Head.Position) end
     end
 end)
 
 UserInputService.InputBegan:Connect(function(i) if i.KeyCode == Enum.KeyCode.Insert or i.KeyCode == Enum.KeyCode.Delete then MainFrame.Visible = not MainFrame.Visible end end)
 
-UpdateList()
-UpdateTeams()
-Players.PlayerAdded:Connect(UpdateList)
-Players.PlayerRemoving:Connect(UpdateList)
-Teams.ChildAdded:Connect(UpdateTeams)
 Tabs["Main"].F.Visible, Tabs["Main"].B.TextColor3 = true, PINK
